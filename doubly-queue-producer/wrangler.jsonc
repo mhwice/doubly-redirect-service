@@ -17,7 +17,13 @@
         "queue": "doubly-queue"
       }
     ]
-  }
+  },
+  "kv_namespaces": [
+    {
+      "binding": "DOUBLY_KV",
+      "id": "7fdaccaf9072443db29e72b452dd8254"
+    }
+  ]
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
