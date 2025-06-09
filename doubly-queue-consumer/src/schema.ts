@@ -74,8 +74,8 @@ export const PayloadSchema = z.object({
     }
 
   return {
-    id: linkId,
-    createdAt,
+    link_id: linkId,
+    created_at: createdAt,
     source: source === "qr" ? "qr" : "link",
     latitude: latitude === undefined ? undefined : parseFloat(latitude),
     longitude: longitude === undefined ? undefined : parseFloat(longitude),

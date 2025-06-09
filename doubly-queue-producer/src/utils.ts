@@ -1,4 +1,4 @@
-function extractCode(request: Request<unknown, IncomingRequestCfProperties<unknown>>) {
+export function extractCode(request: Request<unknown, IncomingRequestCfProperties<unknown>>) {
   const url = new URL(request.url);
   const path = url.pathname;
   const chunks = path.split("/");
@@ -15,7 +15,7 @@ function isCode(code: string) {
   return regex.test(code);
 }
 
-function extractMetadata(request: Request<unknown, IncomingRequestCfProperties<unknown>>) {
+export function extractMetadata(request: Request<unknown, IncomingRequestCfProperties<unknown>>) {
   return {
     url: request.url,
     continent: request.cf?.continent,

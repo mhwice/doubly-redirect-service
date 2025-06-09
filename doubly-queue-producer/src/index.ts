@@ -1,6 +1,7 @@
 import { getKVLink, writeKV } from "./kv";
 import { getLinkFromDB } from "./neon";
 import { getRedisLink, updateRedisCache } from "./redis";
+import { extractCode, extractMetadata } from "./utils";
 
 export interface Env {
   QUEUE: Queue<any>;
