@@ -44,7 +44,7 @@ export default {
       );
 
       const response = await sql(query, values);
-      console.log(`response: ${JSON.stringify(response)}`);
+      console.log(`Successfully wrote ${response.length} events to DB`);
     } catch (error) {
       console.log("failed to write clicks to neon", error);
     }

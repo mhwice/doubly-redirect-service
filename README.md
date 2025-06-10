@@ -1,16 +1,24 @@
 This service both redirects users as well as records click metadata.
 
--- Test #1 --
+
+
+#### Tests
+
+##### Test #1
 Duration: 10s
 Request/s: 10
 Total Requests: 100
 
--- Test #2 --
+> Completed successfully. Redirect time dropped to aroun 25ms after being fully warmed. 100/100 events successfully inserted into the database.
+
+##### Test #2
 Duration: 30s
 Request/s: 100
 Total Requests: 3000
 
--- Test #3 --
+> Completed successfully. P95 response time was 58ms, but I noticed that after the system had been running for 10-15s the response time seemed to drop to around 42ms, so there still might have been some cold-start influence. 3001/3001 events successfully inserted into the database.
+
+##### Test #3
 Duration: 180s
 Request/s: 1000
 Total Requests: 180,000
