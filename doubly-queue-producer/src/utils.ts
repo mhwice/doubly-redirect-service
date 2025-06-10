@@ -12,7 +12,7 @@ export function extractCode(request: Request<unknown, IncomingRequestCfPropertie
   const path = url.pathname;
   const chunks = path.split("/");
   if (chunks.length !== 2) return null;
-  const code = chunks.at(-1);
+  const code = chunks[1];
   if (!code || !isCode(code)) return null;
   return code;
 }

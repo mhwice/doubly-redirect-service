@@ -1,11 +1,16 @@
 import { z } from "zod";
-import { CacheProps } from "./redis";
 import { Env } from ".";
 
 const CacheSchema = z.object({
   originalUrl: z.string(),
   linkId: z.coerce.number()
 })
+
+interface CacheProps {
+  code: string,
+  originalUrl: string,
+  linkId: number
+}
 
 export async function getKVLink(code: string, env: Env) {
 

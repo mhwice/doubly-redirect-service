@@ -14,8 +14,9 @@
     "consumers": [
       {
         "queue": "doubly-queue",
-        "max_batch_size": 10,
-        "max_batch_timeout": 60
+        "max_batch_size": 10, // [1,100]
+        "max_batch_timeout": 5, // [0,60]
+        "max_retries": 3, // recommended 3
       }
     ]
   }

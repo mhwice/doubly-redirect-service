@@ -1,7 +1,6 @@
 import { getKVLink, writeKV } from "./kv";
 import { getLinkFromDB } from "./neon";
-import { getRedisLink, updateRedisCache } from "./redis";
-import { extractCode, extractCodeFast, extractMetadata } from "./utils";
+import { extractCodeFast, extractMetadata } from "./utils";
 
 export interface Env {
   QUEUE: Queue<any>;
@@ -20,8 +19,6 @@ function makeResponse(url: string = "https://doubly.dev") {
   }});
 }
 
-const USE_REDIS_CACHE = false; // if false, uses Cloudflare KV
-
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
 
@@ -32,7 +29,7 @@ export default {
     if (!code) return makeResponse();
 
     // Check cache for url
-    const cachedLink = USE_REDIS_CACHE ? await getRedisLink(code, env) : await getKVLink(code, env);
+    const cachedLink = await getKVLink(code, env);
 
     // If we have a cached link, write metadata, and redirect
     if (cachedLink) {
@@ -54,11 +51,7 @@ export default {
     if (!dbLink) return makeResponse();
 
     // Link exists in DB, but not in Cache, so we want to update the cache
-    if (USE_REDIS_CACHE) {
-      await updateRedisCache({ code, ...dbLink }, env);
-    } else {
-      await writeKV({ code, ...dbLink }, env);
-    }
+    await writeKV({ code, ...dbLink }, env);
 
     const payload = {
       linkId: dbLink.linkId,
