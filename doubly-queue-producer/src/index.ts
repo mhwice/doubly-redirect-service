@@ -1,7 +1,7 @@
 import { getKVLink, writeKV } from "./kv";
 import { getLinkFromDB } from "./neon";
 import { getRedisLink, updateRedisCache } from "./redis";
-import { extractCode, extractMetadata } from "./utils";
+import { extractCode, extractCodeFast, extractMetadata } from "./utils";
 
 export interface Env {
   QUEUE: Queue<any>;
@@ -26,7 +26,9 @@ export default {
 	async fetch(request, env, ctx): Promise<Response> {
 
     // Parse code
-    const code = extractCode(request);
+    const { pathname } = new URL(request.url);
+    const code = extractCodeFast(pathname);
+    // const code = extractCode(request);
     if (!code) return makeResponse();
 
     // Check cache for url
@@ -39,7 +41,11 @@ export default {
         createdAt: new Date(),
         ...extractMetadata(request)
       };
-      await env.QUEUE.send(payload);
+      // await env.QUEUE.send(payload);
+      ctx.waitUntil(env.QUEUE.send(payload).catch((error) => {
+        console.error("queue send failed", error);
+      }));
+
       return makeResponse(cachedLink.originalUrl);
     }
 
@@ -60,7 +66,10 @@ export default {
       ...extractMetadata(request)
     };
 
-    await env.QUEUE.send(payload);
+    // await env.QUEUE.send(payload);
+    ctx.waitUntil(env.QUEUE.send(payload).catch((error) => {
+      console.error("queue send failed", error);
+    }));
 
     return makeResponse(dbLink.originalUrl);
 	},

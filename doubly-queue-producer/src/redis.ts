@@ -2,10 +2,6 @@ import { Redis } from "@upstash/redis/cloudflare";
 import { z } from "zod";
 import { Env } from ".";
 
-function getRedisClient(env: Env) {
-  return Redis.fromEnv(env);
-}
-
 function shortCodeKey(code: string) {
   return `short:${code}`;
 }
@@ -16,12 +12,15 @@ const CacheSchema = z.object({
 })
 
 export async function getRedisLink(code: string, env: Env): Promise<{ originalUrl: string; linkId: number } | null> {
-  const redis = getRedisClient(env);
-  const data = await redis.hgetall(shortCodeKey(code));
-  if (!data) return null;
-  const validated = CacheSchema.safeParse(data);
-  if (!validated.success) return null;
-  return { originalUrl: validated.data.originalUrl, linkId: validated.data.linkId };
+  try {
+    const redis = Redis.fromEnv(env);
+    const data = await redis.hgetall(shortCodeKey(code));
+    if (!data) return null;
+    return CacheSchema.parse(data);
+  } catch (error) {
+    console.log("failed to read from redis", error);
+    return null;
+  }
 }
 
 export interface PayloadProps {
@@ -40,19 +39,23 @@ export interface PayloadProps {
 }
 
 export async function writeToStream(payload: PayloadProps, env: Env) {
-  const redis = getRedisClient(env);
+  try {
+    const redis = Redis.fromEnv(env);
 
-  const events: Record<string, string> = {};
-  for (const [k, v] of Object.entries(payload)) {
-    if (v === undefined) continue;
-    if (v instanceof Date) {
-      events[k] = v.toISOString();
-    } else {
-      events[k] = String(v);
+    const events: Record<string, string> = {};
+    for (const [k, v] of Object.entries(payload)) {
+      if (v === undefined) continue;
+      if (v instanceof Date) {
+        events[k] = v.toISOString();
+      } else {
+        events[k] = String(v);
+      }
     }
-  }
 
-  await redis.xadd('click_events', '*', events);
+    await redis.xadd('click_events', '*', events);
+  } catch (error) {
+    console.log("failed to write to stream", error);
+  }
 }
 
 export interface CacheProps {
@@ -62,6 +65,10 @@ export interface CacheProps {
 }
 
 export async function updateRedisCache({ code, originalUrl, linkId }: CacheProps, env: Env) {
-  const redis = getRedisClient(env);
-  await redis.hset(shortCodeKey(code), { originalUrl, linkId });
+  try {
+    const redis = Redis.fromEnv(env);
+    await redis.hset(shortCodeKey(code), { originalUrl, linkId });
+  } catch (error) {
+    console.log("failed to write to cache", error);
+  }
 }

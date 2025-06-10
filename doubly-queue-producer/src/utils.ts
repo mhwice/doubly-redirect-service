@@ -1,3 +1,12 @@
+const CODE_REGEX = /^[0-9A-Za-z]{12}$/;
+
+export function extractCodeFast(pathname: string) {
+  if (pathname.length !== 13 || pathname[0] !== "/") return null;
+  const code = pathname.slice(1);
+  return CODE_REGEX.test(code) ? code : null;
+}
+
+
 export function extractCode(request: Request<unknown, IncomingRequestCfProperties<unknown>>) {
   const url = new URL(request.url);
   const path = url.pathname;

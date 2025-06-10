@@ -8,15 +8,22 @@ const LinkSchema = z.object({
 });
 
 export async function getLinkFromDB(code: string, env: Env) {
-  const sql = neon(env.DATABASE_URL);
+  let response;
+  try {
+    const sql = neon(env.DATABASE_URL);
 
-  const query = `
-    SELECT *
-    FROM links
-    WHERE code = $1
-  `;
+    const query = `
+      SELECT *
+      FROM links
+      WHERE code = $1
+    `;
 
-  const response = await sql(query, [code]);
+    response = await sql(query, [code]);
+  } catch (error) {
+    console.log("failed to read from db", error);
+    return null;
+  }
+
   if (!response) return null;
   if (response.length !== 1) return null;
   const validated = LinkSchema.safeParse(response[0]);
