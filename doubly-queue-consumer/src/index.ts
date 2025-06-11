@@ -2,7 +2,10 @@ import { neon } from '@neondatabase/serverless';
 import { PayloadSchema } from "./schema";
 
 export interface Env {
-  QUEUE: Queue<any>;
+  QUEUE1: Queue<any>;
+  QUEUE2: Queue<any>;
+  QUEUE3: Queue<any>;
+  QUEUE4: Queue<any>;
   DATABASE_URL: string;
 }
 
@@ -23,7 +26,6 @@ export default {
 
       if (validatedMessages.length === 0) return;
 
-      // const keys = Array.from(Object.keys(validatedMessages[0]));
       const keys = ["link_id","created_at","source","latitude","longitude","city","region","country","continent","browser","os","device"];
       const perRow = keys.length;
       const placeholders = validatedMessages.map((_, rowIdx) => {
@@ -39,7 +41,6 @@ export default {
       `;
 
       const values = validatedMessages.flatMap(msg =>
-        // for each message, pull out its columns in the same order as `keys`
         keys.map(key => (msg as Record<string, unknown>)[key])
       );
 

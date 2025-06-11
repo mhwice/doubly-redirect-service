@@ -6,7 +6,6 @@ export function extractCodeFast(pathname: string) {
   return CODE_REGEX.test(code) ? code : null;
 }
 
-
 export function extractCode(request: Request<unknown, IncomingRequestCfProperties<unknown>>) {
   const url = new URL(request.url);
   const path = url.pathname;

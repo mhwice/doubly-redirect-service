@@ -13,10 +13,28 @@
   "queues": {
     "consumers": [
       {
-        "queue": "doubly-queue",
-        "max_batch_size": 100, // [1,100]
-        "max_batch_timeout": 5, // [0,60]
-        "max_retries": 3, // recommended 3
+        "queue": "doubly-queue-1",
+        "max_batch_size": 100,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
+      },
+      {
+        "queue": "doubly-queue-2",
+        "max_batch_size": 100,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
+      },
+      {
+        "queue": "doubly-queue-3",
+        "max_batch_size": 100,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
+      },
+      {
+        "queue": "doubly-queue-4",
+        "max_batch_size": 100,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
       }
     ]
   }

@@ -13,15 +13,27 @@
   "queues": {
     "producers": [
       {
-        "binding": "QUEUE",
-        "queue": "doubly-queue"
+        "binding": "QUEUE1",
+        "queue": "doubly-queue-1"
+      },
+      {
+        "binding": "QUEUE2",
+        "queue": "doubly-queue-2"
+      },
+      {
+        "binding": "QUEUE3",
+        "queue": "doubly-queue-3"
+      },
+      {
+        "binding": "QUEUE4",
+        "queue": "doubly-queue-4"
       }
     ]
   },
   "kv_namespaces": [
     {
       "binding": "DOUBLY_KV",
-      "id": "7fdaccaf9072443db29e72b452dd8254"
+      "id": "043711fbd25e4d8bbd75b4a6ea7e2beb"
     }
   ]
 	/**
