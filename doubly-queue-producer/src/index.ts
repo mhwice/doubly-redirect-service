@@ -21,72 +21,80 @@ function makeResponse(url: string = "https://doubly.dev") {
 }
 
 // FNV-1a 32-bit hash
-function fnv1a(str: string): number {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);
-    hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0;
-  }
-  return hash >>> 0;
-}
+// function fnv1a(str: string): number {
+//   let hash = 0x811c9dc5;
+//   for (let i = 0; i < str.length; i++) {
+//     hash ^= str.charCodeAt(i);
+//     hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0;
+//   }
+//   return hash >>> 0;
+// }
 
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
 
-    // Parse code
-    const { pathname } = new URL(request.url);
-    const code = extractCodeFast(pathname);
-    if (!code) return makeResponse();
+    try {
+      // Parse code
+      const { pathname } = new URL(request.url);
+      const code = extractCodeFast(pathname);
+      if (!code) return makeResponse();
 
-    // Check cache for url
-    const cachedLink = await getKVLink(code, env);
+      // Check cache for url
+      const cachedLink = await getKVLink(code, env);
 
-    // Define queues
-    const queues = [env.QUEUE1, env.QUEUE2, env.QUEUE3, env.QUEUE4];
+      // Define queues
+      const queues = [env.QUEUE1, env.QUEUE2, env.QUEUE3, env.QUEUE4];
 
-    // If we have a cached link, write metadata, and redirect
-    if (cachedLink) {
+      // If we have a cached link, write metadata, and redirect
+      if (cachedLink) {
+        const payload = {
+          linkId: cachedLink.linkId,
+          createdAt: new Date().toISOString(),
+          ...extractMetadata(request)
+        };
+
+        // Get random queue
+        // const hash = fnv1a(String(cachedLink.linkId));
+        // const idx = hash % queues.length;
+        const idx = cachedLink.linkId % queues.length;
+        const queue = queues[idx];
+
+        ctx.waitUntil(queue.send(payload).catch((error) => {
+          console.error("queue send failed", error);
+        }));
+
+        return makeResponse(cachedLink.originalUrl);
+      }
+
+      // If we do not have a cached link, hit the db
+      const dbLink = await getLinkFromDB(code, env);
+      if (!dbLink) return makeResponse();
+
+      // Link exists in DB, but not in Cache, so we want to update the cache
+      await writeKV({ code, ...dbLink }, env);
+
       const payload = {
-        linkId: cachedLink.linkId,
-        createdAt: new Date(),
+        linkId: dbLink.linkId,
+        createdAt: new Date().toISOString(),
         ...extractMetadata(request)
       };
 
       // Get random queue
-      const hash = fnv1a(String(cachedLink.linkId));
-      const idx = hash % queues.length;
+      // const hash = fnv1a(String(dbLink.linkId));
+      // const idx = hash % queues.length;
+      const idx = dbLink.linkId % queues.length;
       const queue = queues[idx];
 
       ctx.waitUntil(queue.send(payload).catch((error) => {
         console.error("queue send failed", error);
       }));
 
-      return makeResponse(cachedLink.originalUrl);
+      return makeResponse(dbLink.originalUrl);
+    } catch (error) {
+      console.error("unexpected error", error);
+      return makeResponse();
     }
 
-    // If we do not have a cached link, hit the db
-    const dbLink = await getLinkFromDB(code, env);
-    if (!dbLink) return makeResponse();
-
-    // Link exists in DB, but not in Cache, so we want to update the cache
-    await writeKV({ code, ...dbLink }, env);
-
-    const payload = {
-      linkId: dbLink.linkId,
-      createdAt: new Date(),
-      ...extractMetadata(request)
-    };
-
-    // Get random queue
-    const hash = fnv1a(String(dbLink.linkId));
-    const idx = hash % queues.length;
-    const queue = queues[idx];
-
-    ctx.waitUntil(queue.send(payload).catch((error) => {
-      console.error("queue send failed", error);
-    }));
-
-    return makeResponse(dbLink.originalUrl);
 	},
 } satisfies ExportedHandler<Env>;
 

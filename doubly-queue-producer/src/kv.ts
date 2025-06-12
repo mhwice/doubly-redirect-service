@@ -13,25 +13,23 @@ interface CacheProps {
 }
 
 export async function getKVLink(code: string, env: Env) {
-
-  const record = await env.DOUBLY_KV.get(code);
-  if (!record) return null;
-
-  let data;
   try {
-    data = JSON.parse(record);
+    const record = await env.DOUBLY_KV.get(code);
+    if (!record) return null;
+    let data = JSON.parse(record);
+    return CacheSchema.parse(data);
   } catch (error) {
-    data = null;
+    console.error("failed to read kv", error);
+    return null;
   }
-
-  const validated = CacheSchema.safeParse(data);
-  if (!validated.success) return null;
-
-  return validated.data;
 }
 
 export async function writeKV({ code, originalUrl, linkId }: CacheProps, env: Env) {
-  const key = code;
-  const payload = JSON.stringify({ originalUrl, linkId });
-  await env.DOUBLY_KV.put(key, payload);
+  try {
+    const key = code;
+    const payload = JSON.stringify({ originalUrl, linkId });
+    await env.DOUBLY_KV.put(key, payload);
+  } catch (error) {
+    console.log("failed to write to kv", error);
+  }
 }

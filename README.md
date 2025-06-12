@@ -32,7 +32,7 @@ Request/s: 1000
 Total Requests: 30,000
 Daily Rate: 86.4M requests/day
 
-> Completed successfull. P95 response time of 71ms. This is higher, but I suspect its because of my new logic and round robin queueing. 29996/30001 events were inserted into the database. It is unclear what happened to the remaining 5 events.
+> Completed successfull. P95 response time of 71ms. This is higher, but I suspect its because of my new logic and round robin queueing. 29,996/30,001 events were inserted into the database. It is unclear what happened to the remaining 5 events.
 
 ------
 

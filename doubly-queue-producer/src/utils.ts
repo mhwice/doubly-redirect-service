@@ -24,14 +24,19 @@ function isCode(code: string) {
 }
 
 export function extractMetadata(request: Request<unknown, IncomingRequestCfProperties<unknown>>) {
-  return {
-    url: request.url,
-    continent: request.cf?.continent,
-    country: request.cf?.country,
-    region: request.cf?.regionCode,
-    city: request.cf?.city,
-    latitude: request.cf?.latitude,
-    longitude: request.cf?.longitude,
-    ua: request.headers.get("User-Agent")
+  try {
+    return {
+      url: request.url,
+      continent: request.cf?.continent,
+      country: request.cf?.country,
+      region: request.cf?.regionCode,
+      city: request.cf?.city,
+      latitude: request.cf?.latitude,
+      longitude: request.cf?.longitude,
+      ua: request.headers.get("User-Agent")
+    }
+  } catch (error) {
+    console.error("failed to extract metadata", error);
+    throw new Error();
   }
 }

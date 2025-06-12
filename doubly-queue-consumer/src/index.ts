@@ -47,7 +47,7 @@ export default {
       const response = await sql(query, values);
       console.log(`Successfully wrote ${response.length} events to DB`);
     } catch (error) {
-      console.log("failed to write clicks to neon", error);
+      console.error("failed to write clicks to neon", error);
     }
   },
 } satisfies ExportedHandler<Env>;
