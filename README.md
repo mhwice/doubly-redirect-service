@@ -23,7 +23,7 @@ Request/s: 500
 Total Requests: 30,000
 Daily Rate: 43.2M requests/day
 
-> Completed successfull. P95 response time was 61ms. Interestingly, the response time stayed around 35ms for most of the test, but jumped to 70ms at the end (last 10 seconds). I am unsure why this is. 30,001/30,001 events successfully inserted into the database.
+> Completed successfully. P95 response time was 61ms. Interestingly, the response time stayed around 35ms for most of the test, but jumped to 70ms at the end (last 10 seconds). I am unsure why this is. 30,001/30,001 events successfully inserted into the database.
 
 ##### Test #4
 
@@ -32,7 +32,17 @@ Request/s: 1000
 Total Requests: 30,000
 Daily Rate: 86.4M requests/day
 
-> Completed successfull. P95 response time of 71ms. This is higher, but I suspect its because of my new logic and round robin queueing. 29,996/30,001 events were inserted into the database. It is unclear what happened to the remaining 5 events.
+> Completed successfully. P95 response time of 71ms. This is higher, but I suspect its because of my new logic and round robin queueing. 29,996/30,001 events were inserted into the database. Of those 5 events, 2 redirected properly but their event data failed to enter the queue, and for the other 3 they failed both redirection and db insertion.
+
+##### Test #5
+
+Duration: 20s
+Request/s: 3000
+Total Requests: 60,000
+Daily Rate: 259.2M requests/day
+
+> Completed successfully. P95 response time of 71ms, but this was a short test and it was trending down to ~60ms at the end. 60,002/60,002 events were inserted into the database. 
+
 
 ------
 
