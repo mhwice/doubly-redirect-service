@@ -6,7 +6,7 @@ Request/s: 10
 Total Requests: 100
 Daily Rate: 864K requests/day
 
-> Completed successfully. Redirect time dropped to aroun 25ms after being fully warmed. 100/100 events successfully inserted into the database.
+> Completed successfully. Redirect time dropped to around 25ms after being fully warmed. 100/100 events successfully inserted into the database.
 
 ##### Test #2
 Duration: 30s
@@ -43,35 +43,96 @@ Daily Rate: 259.2M requests/day
 
 > Completed successfully. P95 response time of 71ms, but this was a short test and it was trending down to ~60ms at the end. 60,002/60,002 events were inserted into the database. 
 
+##### Test #6
+
+Duration: 60s
+Request/s: 3000
+Total Requests: 180,000
+Daily Rate: 259.2M requests/day
+Monthly Rate: 7.7B requests/month
+
+> Completed successfully. P95 response time of 57ms. 180,000/180,001 events were inserted into the database. I think this response time more accurately reflects reality since we have 20k links and we need a while to warm them up.
+
+##### Test #7 [not yet done]
+
+Duration: 20s
+Request/s: 12,000
+Total Requests: 240,000
+Daily Rate: 1.03B requests/day
+Monthly Rate: 31B requests/month
+Estimated CF Cost: $0.39
+Estimate VUhs: 67
+
+
+##### Test #7 [not yet done]
+
+Duration: 20s
+Request/s: 10,000
+Total Requests: 200,000
+Daily Rate: 864M requests/day
+Monthly Rate: 25.9B requests/month
+Estimated CF Cost: $0.33
+Estimate VUhs: 56
+
+##### Test #7 [not yet done]
+
+Duration: 60s
+Request/s: 4,000
+Total Requests: 240,000
+Daily Rate: 3456.M requests/day
+Monthly Rate: 10.36B requests/month
+Estimated CF Cost: $0.39
+Estimate VUhs: 67
+
+##### Test #7 [not yet done]
+
+Duration: 20s
+Request/s: 17,000
+Total Requests: 340,000
+Minute Rate: 1.02M requests/minute
+Daily Rate: 1.46B requests/day
+Monthly Rate: 44.06B requests/month
+Estimated CF Cost: $0.55
+Estimate VUhs: 100
+
+
+
+1M requests/minute
+1B requests/day
+10B requests/month
+10K requests/s
+250M requests/day
+
+
+
+
+
+
+
 
 ------
 
-Each producer has:
-1 kv read + 1 queue write
+#### Upstash Redis VS Cloudflare KV.
 
-Each consumer has:
-1 queue read + 1 db write
+Before doing any load testing, I wanted to check to see whether Upstash Redis or Cloudflare KV would be a better option for caching short links. As both services are offered globally, and can allow for a virtually unlimited number of reads/writes, my main focus was which service was faster. I did several quick tests from multiple regions and found that Upstash was consitently faster for cold-key lookups, but slower for warm-key lookups. This was true across all regions. 
 
-So if I do test#3, I am processing 180k requests.
-This means 180k kv reads, 360k queue ops, and 180k db rows.
-
-Apparently I should be well within my limits to do all of this (neon is probably good till 3m rows).
-
-Upstash Redis VS Cloudflare KV.
-
-On cold starts, Upstash is consistenly much faster.
+Cold reads, time in ms.
+```
 {"redisLatency":63,"kvLatency":174}
 {"redisLatency":81,"kvLatency":178}
+```
 
-But after the first hit, kv is consistently faster.
+Warm reads, time in ms.
+```
 {"redisLatency":61,"kvLatency":4}
 {"redisLatency":54,"kvLatency":5}
 {"redisLatency":33,"kvLatency":3}
 {"redisLatency":57,"kvLatency":4}
+```
 
-I have done more tests in different regions, and the story is the same.
-After the cold start, the kv is much faster.
-From London and Sydney this difference was a p95 of 258ms for Upstash, and just 19ms for KV!
+Seeing as though a link redirect service is likely to be handling a lot of traffic, it seems that KV is the better option.
+
+> With that said, I could also do some fancy
 
 
 

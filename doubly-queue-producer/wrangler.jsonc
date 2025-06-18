@@ -27,6 +27,10 @@
       {
         "binding": "QUEUE4",
         "queue": "doubly-queue-4"
+      },
+      {
+        "binding": "QUEUE5",
+        "queue": "doubly-queue-5"
       }
     ]
   },

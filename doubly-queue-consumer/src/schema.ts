@@ -5,6 +5,7 @@ import iso3166 from "iso-3166-2";
 export const PayloadSchema = z.object({
   linkId: z.number(),
   createdAt: z.coerce.date(),
+  eventId: z.string(),
   ua: z.string().optional(),
   latitude: z.string().optional(),
   longitude: z.string().optional(),
@@ -15,7 +16,7 @@ export const PayloadSchema = z.object({
   url: z.string(),
 }).transform((obj) => {
 
-  const { linkId, createdAt, ua, latitude, longitude, city, region, country, continent, url } = obj;
+  const { linkId, createdAt, eventId, ua, latitude, longitude, city, region, country, continent, url } = obj;
 
   // extract from ua
   let browser, os, device;
@@ -76,6 +77,7 @@ export const PayloadSchema = z.object({
   return {
     link_id: linkId,
     created_at: createdAt,
+    event_id: eventId,
     source: source === "qr" ? "qr" : "link",
     latitude: latitude === undefined ? undefined : parseFloat(latitude),
     longitude: longitude === undefined ? undefined : parseFloat(longitude),

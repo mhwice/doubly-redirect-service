@@ -6,6 +6,7 @@ export interface Env {
   QUEUE2: Queue<any>;
   QUEUE3: Queue<any>;
   QUEUE4: Queue<any>;
+  QUEUE5: Queue<any>;
   DATABASE_URL: string;
 }
 
@@ -26,7 +27,7 @@ export default {
 
       if (validatedMessages.length === 0) return;
 
-      const keys = ["link_id","created_at","source","latitude","longitude","city","region","country","continent","browser","os","device"];
+      const keys = ["link_id","created_at","event_id","source","latitude","longitude","city","region","country","continent","browser","os","device"];
       const perRow = keys.length;
       const placeholders = validatedMessages.map((_, rowIdx) => {
         const start = rowIdx * perRow + 1;
@@ -40,8 +41,8 @@ export default {
         RETURNING *;
       `;
 
-      const values = validatedMessages.flatMap(msg =>
-        keys.map(key => (msg as Record<string, unknown>)[key])
+      const values = validatedMessages.flatMap((msg) =>
+        keys.map((key) => (msg as Record<string, unknown>)[key])
       );
 
       const response = await sql(query, values);
