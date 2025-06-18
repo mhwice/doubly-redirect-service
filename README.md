@@ -53,57 +53,26 @@ Monthly Rate: 7.7B requests/month
 
 > Completed successfully. P95 response time of 57ms. 180,000/180,001 events were inserted into the database. I think this response time more accurately reflects reality since we have 20k links and we need a while to warm them up.
 
-##### Test #7 [not yet done]
+##### Test #7
 
 Duration: 20s
 Request/s: 12,000
 Total Requests: 240,000
 Daily Rate: 1.03B requests/day
 Monthly Rate: 31B requests/month
-Estimated CF Cost: $0.39
-Estimate VUhs: 67
+
+> Failed. 165k / 244k requests failed with status 403. Further investigation discovered that requests were being blocked by Coudflares DDoS firewall. Need to figure out how to get around that.
 
 
-##### Test #7 [not yet done]
+##### Test #8
 
 Duration: 20s
-Request/s: 10,000
-Total Requests: 200,000
-Daily Rate: 864M requests/day
-Monthly Rate: 25.9B requests/month
-Estimated CF Cost: $0.33
-Estimate VUhs: 56
-
-##### Test #7 [not yet done]
-
-Duration: 60s
-Request/s: 4,000
+Request/s: 12,000
 Total Requests: 240,000
-Daily Rate: 3456.M requests/day
-Monthly Rate: 10.36B requests/month
-Estimated CF Cost: $0.39
-Estimate VUhs: 67
+Daily Rate: 1.03B requests/day
+Monthly Rate: 31B requests/monthTest #7 [not yet done]
 
-##### Test #7 [not yet done]
-
-Duration: 20s
-Request/s: 17,000
-Total Requests: 340,000
-Minute Rate: 1.02M requests/minute
-Daily Rate: 1.46B requests/day
-Monthly Rate: 44.06B requests/month
-Estimated CF Cost: $0.55
-Estimate VUhs: 100
-
-
-
-1M requests/minute
-1B requests/day
-10B requests/month
-10K requests/s
-250M requests/day
-
-
+> Failed, but better. Only 4/241763 requests failed, but somehow 270k events were inserted into the database. I suspect this is due to the queues "at least once" behaviour. Solution is to add a unique id to each event. Also interesting to note that the request time got down to 45ms at the end of the test - showing the caching taking effect. Also interesting is the spike in response time when the test started. My thinking is that this was from many cold keys being hit. Perhaps these should be hit during setup as well as the hot links to prevent the spike. Also had a single request take 2s which is interesting. Perhaps many retries.
 
 
 
