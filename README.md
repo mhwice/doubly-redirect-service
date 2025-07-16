@@ -135,3 +135,35 @@ Seeing as though a link redirect service is likely to be handling a lot of traff
  npx wrangler kv bulk put kv.json --namespace-id=7fdaccaf9072443db29e72b452dd8254 --remote
 ```
 
+
+
+-----
+
+
+
+### Architecture
+
+This service is standalone - it does not reach out to any other service. I decided to use Cloudflare KV instead of Upstash Redis as after testing, KV outperformed Redis significantly. 
+
+![](./README.assets/doubly-architecture.png)
+
+### Full
+
+<img src="./README.assets/doubly-architecture-full.png" style="zoom:20%;" />
+
+
+
+How to get it working
+
+Images from Grafana
+
+
+
+
+
+
+
+
+
+
+
