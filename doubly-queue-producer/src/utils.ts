@@ -72,7 +72,7 @@ export async function populateWorkerCache(cacheKey: Request, link: Link, ctx: Ex
 }
 
 export function makePayload(link: Link, request: Request) {
-  const eventId = request.headers.get("CF-Request-ID")!;
+  const eventId = request.headers.get("cf-ray")!;
   return {
     linkId:    link.linkId,
     createdAt: new Date().toISOString(),

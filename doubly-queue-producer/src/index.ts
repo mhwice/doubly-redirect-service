@@ -9,6 +9,25 @@ export interface Env {
   QUEUE3: Queue<any>;
   QUEUE4: Queue<any>;
   QUEUE5: Queue<any>;
+  QUEUE6: Queue<any>;
+  QUEUE7: Queue<any>;
+  QUEUE8: Queue<any>;
+  QUEUE9: Queue<any>;
+  QUEUE10: Queue<any>;
+  QUEUE11: Queue<any>;
+  QUEUE12: Queue<any>;
+  QUEUE13: Queue<any>;
+  QUEUE14: Queue<any>;
+  QUEUE15: Queue<any>;
+  QUEUE16: Queue<any>;
+  QUEUE17: Queue<any>;
+  QUEUE18: Queue<any>;
+  QUEUE19: Queue<any>;
+  QUEUE20: Queue<any>;
+  QUEUE21: Queue<any>;
+  QUEUE22: Queue<any>;
+  QUEUE23: Queue<any>;
+  QUEUE24: Queue<any>;
   DOUBLY_KV: KVNamespace;
   DATABASE_URL: string;
 }
@@ -35,7 +54,7 @@ export default {
         const kv = await getKVLink(code, env);
         if (kv) {
           link = kv;
-          populateWorkerCache(cacheKey, link, ctx);
+          populateWorkerCache(cacheKey, link, ctx, 180);
         }
       }
 
@@ -54,7 +73,32 @@ export default {
 
       // 4. Enqueue + redirect
       const payload = makePayload(link, request);
-      const queue   = pickQueue(link.linkId, [env.QUEUE1, env.QUEUE2, env.QUEUE3, env.QUEUE4, env.QUEUE5]);
+      const queue   = pickQueue(link.linkId, [
+        env.QUEUE1,
+        env.QUEUE2,
+        env.QUEUE3,
+        env.QUEUE4,
+        env.QUEUE5,
+        env.QUEUE6,
+        env.QUEUE7,
+        env.QUEUE8,
+        env.QUEUE9,
+        env.QUEUE10,
+        env.QUEUE11,
+        env.QUEUE12,
+        env.QUEUE13,
+        env.QUEUE14,
+        env.QUEUE15,
+        env.QUEUE16,
+        env.QUEUE17,
+        env.QUEUE18,
+        env.QUEUE19,
+        env.QUEUE20,
+        env.QUEUE21,
+        env.QUEUE22,
+        env.QUEUE23,
+        env.QUEUE24,
+      ]);
       ctx.waitUntil(enqueueWithRetry(queue, payload));
 
       return makeResponse(link.originalUrl);

@@ -31,13 +31,89 @@
       {
         "binding": "QUEUE5",
         "queue": "doubly-queue-5"
+      },
+      {
+        "binding": "QUEUE6",
+        "queue": "doubly-queue-6"
+      },
+      {
+        "binding": "QUEUE7",
+        "queue": "doubly-queue-7"
+      },
+      {
+        "binding": "QUEUE8",
+        "queue": "doubly-queue-8"
+      },
+      {
+        "binding": "QUEUE9",
+        "queue": "doubly-queue-9"
+      },
+      {
+        "binding": "QUEUE10",
+        "queue": "doubly-queue-10"
+      },
+      {
+        "binding": "QUEUE11",
+        "queue": "doubly-queue-11"
+      },
+      {
+        "binding": "QUEUE12",
+        "queue": "doubly-queue-12"
+      },
+      {
+        "binding": "QUEUE13",
+        "queue": "doubly-queue-13"
+      },
+      {
+        "binding": "QUEUE14",
+        "queue": "doubly-queue-14"
+      },
+      {
+        "binding": "QUEUE15",
+        "queue": "doubly-queue-15"
+      },
+      {
+        "binding": "QUEUE16",
+        "queue": "doubly-queue-16"
+      },
+      {
+        "binding": "QUEUE17",
+        "queue": "doubly-queue-17"
+      },
+      {
+        "binding": "QUEUE18",
+        "queue": "doubly-queue-18"
+      },
+      {
+        "binding": "QUEUE19",
+        "queue": "doubly-queue-19"
+      },
+      {
+        "binding": "QUEUE20",
+        "queue": "doubly-queue-20"
+      },
+      {
+        "binding": "QUEUE21",
+        "queue": "doubly-queue-21"
+      },
+      {
+        "binding": "QUEUE22",
+        "queue": "doubly-queue-22"
+      },
+      {
+        "binding": "QUEUE23",
+        "queue": "doubly-queue-23"
+      },
+      {
+        "binding": "QUEUE24",
+        "queue": "doubly-queue-24"
       }
     ]
   },
   "kv_namespaces": [
     {
       "binding": "DOUBLY_KV",
-      "id": "043711fbd25e4d8bbd75b4a6ea7e2beb"
+      "id": "043711fbd25e4d8bbd75b4a6ea7e2beb",
     }
   ]
 	/**

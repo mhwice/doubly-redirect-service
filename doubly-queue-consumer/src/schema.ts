@@ -74,6 +74,10 @@ export const PayloadSchema = z.object({
       }
     }
 
+    // const fake = ["aaa", "bbb", "ccc", "ddd", "eee"];
+    // const idx = Math.floor(Math.random() * 5);
+    // const eid = fake[idx];
+
   return {
     link_id: linkId,
     created_at: createdAt,

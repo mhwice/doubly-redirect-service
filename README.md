@@ -70,13 +70,39 @@ Duration: 20s
 Request/s: 12,000
 Total Requests: 240,000
 Daily Rate: 1.03B requests/day
-Monthly Rate: 31B requests/monthTest #7 [not yet done]
+Monthly Rate: 31B requests/month
 
 > Failed, but better. Only 4/241763 requests failed, but somehow 270k events were inserted into the database. I suspect this is due to the queues "at least once" behaviour. Solution is to add a unique id to each event. Also interesting to note that the request time got down to 45ms at the end of the test - showing the caching taking effect. Also interesting is the spike in response time when the test started. My thinking is that this was from many cold keys being hit. Perhaps these should be hit during setup as well as the hot links to prevent the spike. Also had a single request take 2s which is interesting. Perhaps many retries.
 
+##### Test #9
 
+Duration: 20s
+Request/s: 6,000
+Total Requests: 123,319
+Daily Rate: 518M requests/day
+Monthly Rate: 15.5B requests/month
 
+> Success! P95 response time of 132ms. 123,319/123,319 events were inserted into the database. Very happy with the request success rate, but the response time is much worse. Not sure what happened there - warrants investigation.
 
+##### Test #10
+
+Duration: 20s
+Request/s: 12,000
+Total Requests: 241,600
+Daily Rate: 1.03B requests/day
+Monthly Rate: 31B requests/month
+
+> Success! P95 response time of 90ms. A median response time of under 40ms once the test was underway! 241,596/241,600 events were inserted into the database - 99.998%. 
+
+##### Test #11
+
+Duration: 60s (with 20s ramp-up)
+Request/s: 12,000
+Total Requests: 839,879
+Daily Rate: 1.03B requests/day
+Monthly Rate: 31B requests/month
+
+> Success! P95 response time of 66ms. A median response time of under 40ms once the test was underway! 839,879/839,879 events were inserted into the database (100%)! 
 
 
 ------

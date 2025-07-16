@@ -12,18 +12,6 @@ interface CacheProps {
   linkId: number
 }
 
-// export async function getKVLink(code: string, env: Env) {
-//   try {
-//     const record = await env.DOUBLY_KV.get(code);
-//     if (!record) return null;
-//     let data = JSON.parse(record);
-//     return CacheSchema.parse(data);
-//   } catch (error) {
-//     console.error("failed to read kv", error);
-//     return null;
-//   }
-// }
-
 export async function getKVLink(code: string, env: Env, retries: number = 3) {
 
   for (let attempt = 1; attempt <= retries; attempt++) {
