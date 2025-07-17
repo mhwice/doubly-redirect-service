@@ -47,25 +47,41 @@ k6 cloud run load-tests.js
 
 ![](./README.assets/overview.png)
 
+Requests per Second (RPS). This tests was held at a constant 12,000 RPS for 60 seconds. The little dip at the end was the test finishing. 
+
 ![](./README.assets/rps.png)
+
+Median Request Duration. Held at a very constant 35-40ms.
 
 ![](./README.assets/median.png)
 
+P90 Response Time. This graph tells us how quickly the fastest 90% of requests at each time interval were. We can see that this was a little under 60ms for the majority of the test, meaning that 90% of the requests completed in under 60ms.
+
 ![](./README.assets/p90.png)
 
+P99 Response Time. This graph tells us how quickly the fastest 99% of requests at each time intereval were. We can see that this was a little under 90ms for the majority of the test, meaning that 99% of the requests completed in under 90ms.
+
 ![](./README.assets/p99.png)
+
+Request Failure Rate. Shows the number of requests which failed to redirect to the destination url (ie. `https://doubly.dev/abc123` → `https://www.google.com`)
 
 ![](./README.assets/failure.png)
 
 ### Images from Neon
 
+A query performed immediately after the test to view the number of entries in the `click_events` table. 839,879 events are present which is the same number of requests made by Grafana.
+
 ![](./README.assets/neon.png)
 
 ### Images from Running Tests
 
+This screenshot shows what it looks like to run the tests.
+
 ![](./README.assets/running-tests.png)
 
-#### Tests
+### Test History
+
+I didn't just land on the final architecture and test configuration. It took many tests and a lot of trial and error. Here are a few notable tests that were made along the way, along with my notes on how the test went. 
 
 ##### Test #1
 Duration: 10s
@@ -171,15 +187,7 @@ Monthly Rate: 31B requests/month
 
 > Success! P95 response time of 66ms. A median response time of under 40ms once the test was underway! 839,879/839,879 events were inserted into the database (100%)! 
 
-
-
-
-
-
-
-
-
-#### Upstash Redis VS Cloudflare KV.
+### Upstash Redis VS Cloudflare KV.
 
 Before doing any load testing, I wanted to check to see whether Upstash Redis or Cloudflare KV would be a better option for caching short links. As both services are offered globally, and can allow for a virtually unlimited number of reads/writes, my main focus was which service was faster. I did several quick tests from multiple regions and found that Upstash was consitently faster for cold-key lookups, but slower for warm-key lookups. This was true across all regions. 
 
