@@ -45,7 +45,25 @@ k6 cloud run load-tests.js
 
 ### Images from Grafana
 
+![](./README.assets/overview.png)
 
+![](./README.assets/rps.png)
+
+![](./README.assets/median.png)
+
+![](./README.assets/p90.png)
+
+![](./README.assets/p99.png)
+
+![](./README.assets/failure.png)
+
+### Images from Neon
+
+![](./README.assets/neon.png)
+
+### Images from Running Tests
+
+![](./README.assets/running-tests.png)
 
 #### Tests
 
