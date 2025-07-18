@@ -1,13 +1,20 @@
+- [Introduction](#introduction)
+- [Architecture](#How Does it Work? - Architecture)
+- [How to use](#How to use)
+- [Images from Grafana](#Images from Grafana)
+- [Images from Neon](#Images from Neon)
+- [Images from Running Tests](#Images from Running Tests)
+- [Test History](#Test History)
+- [Upstash Redis VS Cloudflare KV](#Upstash Redis VS Cloudflare KV)
+
 ## Introduction
 
-This repo contains everything needed to run the high-performance Doubly backend. 
+This repo contains everything needed to run the high-performance [Doubly](https://doubly.dev) backend. 
 
 
 ### How Does it Work? - Architecture
 
 This service is standalone - it does not reach out to any other service. I decided to use Cloudflare KV instead of Upstash Redis as after testing, KV outperformed Redis significantly. 
-
-
 
 Let's begin with a simplified example. We have a user who makes a request to a Doubly short link such as `https://doubly.dev/abc123`. This request is caught by a serverless function (Cloudflare Worker) that lives on the edge (very close to the users physical location). This function parses the request, and extracts the short link (ie. `abc123`). The function then checks a fast, in-memory database (Cloudflare KV) to see what URL the short link corresponds to. For example, maybe `abc123` maps to `https://www.google.com`. Once the function has the URL, it collects some metadata about the requester (location, device, time, etc.) and pushes that information into a queue (Cloudflare Queue). Without waiting for the metadata to be processed, the function returns and redirects the user to the URL (`https://www.google.com`). This minimal work on the happy-path is what allows for the blazing fast response time. I call this function the *Producer*, because it produces events to be consumed by the queue.
 
@@ -187,7 +194,7 @@ Monthly Rate: 31B requests/month
 
 > Success! P95 response time of 66ms. A median response time of under 40ms once the test was underway! 839,879/839,879 events were inserted into the database (100%)! 
 
-### Upstash Redis VS Cloudflare KV.
+### Upstash Redis VS Cloudflare KV
 
 Before doing any load testing, I wanted to check to see whether Upstash Redis or Cloudflare KV would be a better option for caching short links. As both services are offered globally, and can allow for a virtually unlimited number of reads/writes, my main focus was which service was faster. I did several quick tests from multiple regions and found that Upstash was consitently faster for cold-key lookups, but slower for warm-key lookups. This was true across all regions. 
 
