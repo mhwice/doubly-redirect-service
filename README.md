@@ -1,11 +1,11 @@
 - [Introduction](#introduction)
-- [Architecture](#How Does it Work? - Architecture)
-- [How to use](#How to use)
-- [Images from Grafana](#Images from Grafana)
-- [Images from Neon](#Images from Neon)
-- [Images from Running Tests](#Images from Running Tests)
-- [Test History](#Test History)
-- [Upstash Redis VS Cloudflare KV](#Upstash Redis VS Cloudflare KV)
+- [How Does it Work? - Architecture](#how-does-it-work---architecture)
+- [How to use](#how-to-use)
+- [Images from Grafana](#images-from-grafana)
+- [Images from Neon](#images-from-neon)
+- [Images from Running Tests](#images-from-running-tests)
+- [Test History](#test-history)
+- [Upstash Redis VS Cloudflare KV](#upstash-redis-vs-cloudflare-kv)
 
 ## Introduction
 
