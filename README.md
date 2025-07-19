@@ -4,13 +4,23 @@
 - [Architecture](#architecture)
 - [Usage](#usage)
 - [Tests](#tests)
-- [Results](#results)
+- [Performance](#performance)
 
 ## Overview
 
 This repository contains everything needed for the high-performance backend of [doubly.dev](https://doubly.dev/). It’s designed to handle over **1 billion requests per day** with a **median response time under 40 ms**, making it ideal for large-scale link-shortening use cases.
 
 If you're looking for the Doubly frontend, check it out here: [github.com/mhwice/doubly](https://github.com/mhwice/doubly).
+
+## Tech Stack
+
+- [Neon](https://neon.tech/) - Serverless Postgres database
+- [TimescaleDB Hypertable](https://docs.timescale.com/use-timescale/latest/hypertables/) - Fast time-series Postgres tables
+- [Cloudflare Workers](https://workers.cloudflare.com/) - Serverless, edge functions
+- [Cloudflare KV](https://developers.cloudflare.com/kv/) - Serverless, edge key/value storage
+- [Cloudflare Queues](https://developers.cloudflare.com/queues/) - Serverless queues
+- [Grafana K6](https://grafana.com/products/cloud/k6/?src=k6io)
+- [Typescript](https://www.typescriptlang.org/)
 
 ## Architecture
 
@@ -47,15 +57,25 @@ When your producer is now reached, at something like `https://your-url/abcdef123
 
 ## Tests
 
+We use **Grafana k6** to benchmark the service under realistic traffic patterns, simulating both a warm-up phase and a steady-state load. To run the tests yourself, you'll need to install the [k6 CLI](https://grafana.com/docs/k6/latest/set-up/install-k6/) and have a [Grafana Cloud account](https://grafana.com/) (paid).
+
 ### Configuration
 
-Tested using Grafana K6. 
+To simulate a production-like environment, we preloaded the database with 20,000 short links, all pointing to `https://www.google.com`. Each short link was also stored in the Cloudflare KV store, mimicking the behavior of the frontend when a user creates a new link.
 
-To prepare the tests, 20,000 short links were created in the database, each mapping to `https://www.google.com`. A key-value pair mapping their short link to Google url were saved inside a Cloudfalre KV. This is what would normally happen when a user creates a new link via the frontend. 
+The test is structured in two phases:
 
-The test then consisted of two stages: the ramp-up, and the constant rate test. The ramp-up stage conisted of a slow increase in the RPS from 0 to the desired RPS over a 20 second period. This was done to slowly warm up the each component (KV store, workers, etc.). This also prevented nasty CPU spikes which could arrive if we go from 0-12k RPS, which isn't realistic. After the ramp-up stage is complete, we hold the RPS at the desired rate (12k RPS) for the desired period (60s).
+1. **Ramp-up phase** – Gradually increases the request rate from 0 to the target RPS over 20 seconds. This avoids sudden CPU or resource spikes and allows components like the KV store and workers to warm up.
+2. **Steady-state phase** – Maintains the target rate (e.g., 12,000 RPS) for a defined duration (e.g., 60 seconds).
 
-Before running the tests, the 20,000 short links were partitioned into two sets of links called *hot links* and *cold links* with an 20/80 split. Then, during the both stages of the test, for each request, we pick from the *hot links* 80% of the time, and from the *cold links* 20% of the time. This was done to more closely mirror reality. If our service has 20k links, it is more likely that a smaller number of links will drive a high amount of the total traffic, and that the majority of the links will drive little traffic. In code this looks like this:
+To simulate realistic traffic patterns, the 20,000 short links were split into two groups:
+
+- **Hot links** (20%) – Frequently accessed
+- **Cold links** (80%) – Infrequently accessed
+
+Each request randomly selects from the hot links 80% of the time and from the cold links 20% of the time. This skews the traffic distribution to more closely reflect real-world usage, where a small number of popular links receive the majority of traffic.
+
+The link selection logic in the test script looks like this:
 
 ```js
 const n = shortlinks.length;
@@ -71,19 +91,29 @@ if (Math.random() < 0.80) {
 }
 ```
 
-And then we make the request to `https://doubly.dev/{code}`.
+Each request is sent to the service like so:
 
-To test the performance of this service you will need a [Grafana Labs](https://grafana.com/) account (paid). You will also need to download the [K6 CLI tool](https://grafana.com/docs/k6/latest/set-up/install-k6/). Then you can simply configure the RPS, virtual users (VUs), and test time in `load-test.js`. Once you are ready to run your tests, simply run:
+```
+https://doubly.dev/{code}
+```
+
+### Running the Test
+
+To run the test:
+
+1. Install the k6 CLI.
+2. Set your desired RPS, virtual users (VUs), and test duration in `load-tests.js`.
+3. Execute the test using:
 
 ```
 k6 cloud run load-tests.js
 ```
 
-This screenshot shows what it looks like to run the tests.
+Your script will be uploaded and executed in the Grafana Cloud environment. The output will look like this:
 
 ![](./README.assets/running-tests.png)
 
-### Test History
+#### Test History
 
 
 **Test #11 (Final):**
@@ -111,8 +141,9 @@ This screenshot shows what it looks like to run the tests.
 
 </details>
 
+## Performance
 
-## Results
+After trial and error we managed to run the backend at a sustained 12,000 RPS for 60s with a 100% resonse success rate (user was redirected correctly and metadata was saved to the database) and a median response time of under 40ms. It is important to note that while we stopped testing at this point, it is very likely that the system could handle a much higher RPS. The current bottleneck was only our willingness to pay to keep running more elaborate tests. Below are a collection of images of the test results for our final test.
 
 ![](./README.assets/overview.png)
 
