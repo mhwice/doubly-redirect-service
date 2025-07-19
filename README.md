@@ -1,9 +1,9 @@
 ![](./README.assets/doubly-header.png)
 
 - [Overview](#overview)
+- [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
-- [Usage](#usage)
-- [Tests](#tests)
+- [Benchmarking](#benchmarking)
 - [Performance](#performance)
 
 ## Overview
@@ -43,19 +43,9 @@ This backend is designed for **edge-first, highly scalable link redirecting**, h
 | Batching & Queues | Queues + Consumer   | Prevent DB overload; smooth bursts       |
 | Caching Strategy  | In-memory + KV + DB | Minimize edge latency; fallback handling |
 
-[Full architecture docs → [ARCHITECTURE.md](https://github.com/mhwice/doubly-redirect-service/ARCHITECTURE.md)]
+[Full architecture docs → [ARCHITECTURE.md](ARCHITECTURE.md)]
 
-## Usage
-
-To run this service you will need a [Neon DB](https://neon.com/) account (free), and a [Cloudflare Workers](https://workers.cloudflare.com/) account (paid). You will need to provide the Neon DB database URL to both the producer and consumer workers. You will also need to create a Worker KV to be used for quickly looking up short links. You will need to create some queues. The number of queues you create depend on the expected traffic you will face. I would recommend trying to keep the average RPS per queue to around 500. So if you expect 1000 RPS, create 2 queues. If you expect 12,000 RPS create 24 queues. 
-
-> Manually creating queues to match the expected RPS is only necessary because of Cloudflare acount limits. You can have Cloudflare lift the limits by paying more, in which case a single queue is fine. 
-
-Once your KV and Queues are created, update the both the `wrangler.jsonrc` and `index.ts` files for both the consumer and the producer workers with the appropriate KV and Queue bindings. 
-
-When your producer is now reached, at something like `https://your-url/abcdef123456` the producer will check the worker cache, then the KV and see no match, and will then reach out to the database to get the short link. Once it retrieves the link, it will populate the KV and will redirect you to the destination url. 
-
-## Tests
+## Benchmarking
 
 We use **Grafana k6** to benchmark the service under realistic traffic patterns, simulating both a warm-up phase and a steady-state load. To run the tests yourself, you'll need to install the [k6 CLI](https://grafana.com/docs/k6/latest/set-up/install-k6/) and have a [Grafana Cloud account](https://grafana.com/) (paid).
 
@@ -112,34 +102,6 @@ k6 cloud run load-tests.js
 Your script will be uploaded and executed in the Grafana Cloud environment. The output will look like this:
 
 ![](./README.assets/running-tests.png)
-
-#### Test History
-
-
-**Test #11 (Final):**
-
-| RPS    | Duration | P95 Latency | Success Rate |
-| ------ | -------- | ----------- | ------------ |
-| 12 000 | 60 s     | 66 ms       | 100%         |
-
-<details>
-  <summary>View full test history</summary>
-
-  | Test | Duration         | RPS    | Total Requests | P95 Latency | Inserts           | Notes                                       |
-  | ---- | ---------------- | ------ | -------------- | ----------- | ----------------- | ------------------------------------------- |
-  | #1   | 10 s             | 10     | 100            | ~25 ms      | 100 / 100         | Fully warmed                                |
-  | #2   | 30 s             | 100    | 3 000          | 58 ms       | 3 001 / 3 001     | Some cold‑start effect                      |
-  | #3   | 60 s             | 500    | 30 000         | 61 ms       | 30 001 / 30 001   | Spike to 70 ms at end                       |
-  | #4   | 30 s             | 1 000  | 30 000         | 71 ms       | 29 996 / 30 001   | 5 queue/redirect errors                     |
-  | #5   | 20 s             | 3 000  | 60 000         | 71 ms       | 60 002 / 60 002   | Trending down toward ~60 ms                 |
-  | #6   | 60 s             | 3 000  | 180 000        | 57 ms       | 180 000 / 180 001 | Accurately warmed                           |
-  | #7   | 20 s             | 12 000 | 240 000        | —           | —                 | 165 000 failures (Cloudflare DDoS firewall) |
-  | #8   | 20 s             | 12 000 | 241 763        | —           | ~270 000          | Duplicates due to at‑least‑once behavior    |
-  | #9   | 20 s             | 6 000  | 123 319        | 132 ms      | 123 319 / 123 319 | —                                           |
-  | #10  | 20 s             | 12 000 | 241 600        | 90 ms       | 241 596 / 241 600 | Median < 40 ms                              |
-  | #11  | 60 s (20 s ramp) | 12 000 | 839 879        | 66 ms       | 839 879 / 839 879 | Median < 40 ms                              |
-
-</details>
 
 ## Performance
 
