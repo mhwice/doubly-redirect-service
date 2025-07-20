@@ -1,5 +1,7 @@
 ![](./README.assets/doubly-header.png)
 
+Doubly is a powerful link shortener and analytics platform that not only generates compact proxy URLs but also captures rich click data—everything from device type and geographic location to timestamp and referrer. With Doubly you simply provide a destination URL, get back a smart short link, and then watch as every click is logged and visualized in a clean, user‑friendly dashboard. Drill down by browser, OS, country (or any combination thereof) over any timeframe and turn raw clicks into actionable insights—no manual instrumentation required.
+
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
@@ -8,7 +10,7 @@
 
 ## Overview
 
-This repository contains everything needed for the high-performance backend of [doubly.dev](https://doubly.dev/). It’s designed to handle over **1 billion requests per day** with a **median response time under 40 ms**, making it ideal for large-scale link-shortening use cases.
+This repository contains everything needed for the high-performance link-redirect backend of [doubly.dev](https://doubly.dev/). It’s designed to handle over **1 billion requests per day** with a **median response time under 40 ms**, making it ideal for large-scale link-shortening use cases.
 
 If you're looking for the Doubly frontend, check it out here: [github.com/mhwice/doubly](https://github.com/mhwice/doubly).
 
@@ -19,12 +21,11 @@ If you're looking for the Doubly frontend, check it out here: [github.com/mhwice
 - [Cloudflare Workers](https://workers.cloudflare.com/) - Serverless, edge functions
 - [Cloudflare KV](https://developers.cloudflare.com/kv/) - Serverless, edge key/value storage
 - [Cloudflare Queues](https://developers.cloudflare.com/queues/) - Serverless queues
-- [Grafana K6](https://grafana.com/products/cloud/k6/?src=k6io)
-- [Typescript](https://www.typescriptlang.org/)
+- [Grafana k6](https://grafana.com/products/cloud/k6/?src=k6io) - Automated load testing
 
 ## Architecture
 
-This backend is designed for **edge-first, highly scalable link redirecting**, handling 1B+ daily requests with low latency.
+This backend is designed for **edge-first, highly scalable link redirecting**, handling 1B+ daily requests with low latency and high reliability.
 
 ### Components Overview
 - **Producer** – Cloudflare Worker on the edge  
@@ -37,11 +38,11 @@ This backend is designed for **edge-first, highly scalable link redirecting**, h
 <img src="./README.assets/doubly-architecture.png" style="zoom:20%;" />
 
 ### Key Design Decisions
-| Area              | Choice              | Why?                                     |
-| ----------------- | ------------------- | ---------------------------------------- |
-| KV vs Redis       | Cloudflare KV       | Lower warm-key latency at scale          |
-| Batching & Queues | Queues + Consumer   | Prevent DB overload; smooth bursts       |
-| Caching Strategy  | In-memory + KV + DB | Minimize edge latency; fallback handling |
+| Area                   | Choice              | Why?                                              |
+| ---------------------- | ------------------- | ------------------------------------------------- |
+| Cloudflare KV vs Redis | Cloudflare KV       | Lower warm-key latency; faster; unified platforms |
+| Batching & Queues      | Queues + Consumer   | Prevent DB overload; smooth bursts                |
+| Caching Strategy       | In-memory + KV + DB | Minimize edge latency; fallback handling          |
 
 [Full architecture docs → [ARCHITECTURE.md](ARCHITECTURE.md)]
 
@@ -55,13 +56,13 @@ To simulate a production-like environment, we preloaded the database with 20,000
 
 The test is structured in two phases:
 
-1. **Ramp-up phase** – Gradually increases the request rate from 0 to the target RPS over 20 seconds. This avoids sudden CPU or resource spikes and allows components like the KV store and workers to warm up.
+1. **Ramp-up phase** – Gradually increases the request rate from 0 to the target requests-per-second (RPS) over 20 seconds. This avoids sudden CPU or resource spikes and allows components like the KV store and workers to warm up.
 2. **Steady-state phase** – Maintains the target rate (e.g., 12,000 RPS) for a defined duration (e.g., 60 seconds).
 
 To simulate realistic traffic patterns, the 20,000 short links were split into two groups:
 
-- **Hot links** (20%) – Frequently accessed
-- **Cold links** (80%) – Infrequently accessed
+- **Hot links** (20% of 20,000) – Frequently accessed
+- **Cold links** (80% of 20,000) – Infrequently accessed
 
 Each request randomly selects from the hot links 80% of the time and from the cold links 20% of the time. This skews the traffic distribution to more closely reflect real-world usage, where a small number of popular links receive the majority of traffic.
 
@@ -105,30 +106,35 @@ Your script will be uploaded and executed in the Grafana Cloud environment. The 
 
 ## Performance
 
-After trial and error we managed to run the backend at a sustained 12,000 RPS for 60s with a 100% resonse success rate (user was redirected correctly and metadata was saved to the database) and a median response time of under 40ms. It is important to note that while we stopped testing at this point, it is very likely that the system could handle a much higher RPS. The current bottleneck was only our willingness to pay to keep running more elaborate tests. Below are a collection of images of the test results for our final test.
+We sustained **12 000 RPS** for **60 s** with a **100% response success rate** and **median latency < 40 ms**.
 
+| Metric         | Value                   |
+| -------------- | ----------------------- |
+| Sustained RPS  | 12 000                  |
+| Duration       | 60 s (with 20s ramp up) |
+| Success Rate   | 100%                    |
+| Median Latency | < 40 ms                 |
+| P90 Latency    | < 60 ms                 |
+| P99 Latency    | < 90 ms                 |
+
+### Requests per Second
+Held constant at 12 000 RPS for 60 s. The dip at the end marks test completion.
 ![](./README.assets/overview.png)
-
-Requests per Second (RPS). This tests was held at a constant 12,000 RPS for 60 seconds. The little dip at the end was the test finishing. 
-
 ![](./README.assets/rps.png)
 
-Median Request Duration. Held at a very constant 35-40ms.
+### Latency Percentiles
 
+- Median (50th): ~ 35–40 ms
+- P90                :       < 60 ms
+- P99                :       < 90 ms
 ![](./README.assets/median.png)
-
-P90 Response Time. This graph tells us how quickly the fastest 90% of requests at each time interval were. We can see that this was a little under 60ms for the majority of the test, meaning that 90% of the requests completed in under 60ms.
-
 ![](./README.assets/p90.png)
-
-P99 Response Time. This graph tells us how quickly the fastest 99% of requests at each time intereval were. We can see that this was a little under 90ms for the majority of the test, meaning that 99% of the requests completed in under 90ms.
-
 ![](./README.assets/p99.png)
 
-Request Failure Rate. Shows the number of requests which failed to redirect to the destination url (ie. `https://doubly.dev/abc123` → `https://www.google.com`)
-
+### Failure Rate
+Zero failed redirects.
 ![](./README.assets/failure.png)
 
-A query performed immediately after the test to view the number of entries in the `click_events` table. 839,879 events are present which is the same number of requests made by Grafana.
-
+### Data Integrity
+839,879 entries in `click_events`— exactly the number of test requests.
 ![](./README.assets/neon.png)
