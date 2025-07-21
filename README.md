@@ -1,6 +1,6 @@
 ![](./README.assets/doubly-redirect-header.png)
 
-Doubly is a powerful link shortener and analytics platform that not only generates compact proxy URLs but also captures rich click data—everything from device type and geographic location to timestamp and referrer. With Doubly you simply provide a destination URL, get back a smart short link, and then watch as every click is logged and visualized in a clean, user‑friendly dashboard. Drill down by browser, OS, country (or any combination thereof) over any timeframe and turn raw clicks into actionable insights—no manual instrumentation required.
+**Doubly** is a link shortener and analytics platform that generates compact proxy URLs and captures rich click data—everything from device type and geographic location to timestamp and referrer. Simply provide a destination URL, get back a smart short link, and watch as every click is logged and visualized in a clean, user‑friendly dashboard. Filter by browser, OS, country, city, referrer, or any combination over any timeframe to turn raw clicks into actionable insights—no manual instrumentation required.
 
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
