@@ -1,39 +1,153 @@
-## Architecture
+# Architecture
 
-This service is standalone - it does not reach out to any other service. I decided to use Cloudflare KV instead of Upstash Redis as after testing, KV outperformed Redis significantly.
+This document dives into the internal design of the standalone Doubly redirect service.
 
-Let's begin with a simplified example. We have a user who makes a request to a Doubly short link such as `https://doubly.dev/abc123`. This request is caught by a serverless function (Cloudflare Worker) that lives on the edge (very close to the users physical location). This function parses the request, and extracts the short link (ie. `abc123`). The function then checks a fast, in-memory database (Cloudflare KV) to see what URL the short link corresponds to. For example, maybe `abc123` maps to `https://www.google.com`. Once the function has the URL, it collects some metadata about the requester (location, device, time, etc.) and pushes that information into a queue (Cloudflare Queue). Without waiting for the metadata to be processed, the function returns and redirects the user to the URL (`https://www.google.com`). This minimal work on the happy-path is what allows for the blazing fast response time. I call this function the *Producer*, because it produces events to be consumed by the queue.
+## 1. Glossary & Terms
 
-After either a fixed amount of time has passed (something like 5s) or after the queue has a total of 100 events enqueued, the queue  will push a batch of events (up to a maximum of 100) from the front of the queue over to another servless function, which I call the *Consumer*. The Consumers job is to take in a batch of click events, validate them, and insert them into our database. This is probably a good time to answer the question "why are we using a queue?". Good question. I actually started off by having no queues or consumers. The Producer was responsible for everything mentioned abve as well as writing to the database. While this works for a low number of RPS, it begins being very slow when our RPS grows. This is because every single event will trigger a separate write event to the database. The database technology we use here is a Neon Postgres database using TimescaleDB Hypertables (more on that later) which perform best when write events are batched. When the events are not batched, the time to write increased significantly, which in some slowed down the entire system. Additionally, the queues help smooth out a  sudden sharp burst of traffic. Imagine the system is experiencing a constant flow of 100 RPS and then suddenly gets 100k RPS for 1s. Writing directly to the database would create 100k pooled connections which the DB cannot handle, whereas with queues we would create 1k pooled connections which it can handle. And finally, queues have an infinity capacity, so we can have them simply wait until the RPS drops down to finish emitting the events to Consumers.
+- **Happy Path**: The steps a user’s request takes before returning a redirect response.
+- **Cold Start**: The first invocation of a component, when caches are empty and latency may be higher.
+- **Queue Shard**: One instance of a Cloudflare Queue, used to distribute load across many queues.
+- **Hypertable**: A TimescaleDB abstraction that partitions a table by time (e.g., daily chunks).
+- **RPS (requests per second)**: The number of requests made by users to `https://doubly.dev/{shortCode}` each second.
 
-<img src="./README.assets/doubly-architecture.png" style="zoom:20%;" />
+## 2. High‑Level Overview
 
-What I have explained so far is a simplified version of the architecture. In reality, we have many users, producers, key-value stores, queues, and consumers. Additionally, we actually have manually sharded queues. Cloudflare Queues have limits on the number of events that can be added to a queue, so to get around this limitation we actually create many queue copies and send click events to the different queues at random.
+- **Domain**: Short‑link redirect + collect click‑event analytics
+- **Scale Target**: ≥ 1 billion requests/day, median latency < 40 ms
+- **Primary Goals**:
+  1. **Edge speed**: Handle redirects via Cloudflare Workers.
+  2. **Minimal happy‑path work**: Redirect immediately; batch events asynchronously. 
+  3. **Burst resilience**: Absorb sudden traffic spikes without overwhelming Postgres.
 
-Another aspect not mentioned is the extra use of caching at the producer layer. Heres how it works. A request comes into a producer, and we extrac the short link (ie. `abc123`). We then check the producers local cache to see if this exact producer has made performed this lookup recently. If not, then we check the nearby Cloudflare KV store which should have a mapping of all short links to urls. You can think of this step like a Redis caching layer. Finally, if the KV does not see the short link, we fallback to looking inside the database.
+## 3. Core Components
 
-Here is a more complete diagram (though I am still not drawing the possible connection from the producer to the DB as that is an unfrequent operation).
+| Component       | Responsibility                                               |
+| --------------- | ------------------------------------------------------------ |
+| **Producer**    | Edge Worker that resolves short codes and enqueues metadata. |
+| **Queue Shard** | Cloudflare Queue instances that buffer click‑event payloads. |
+| **Consumer**    | Worker that dequeues batches and writes events to Postgres.  |
+| **KV Store**    | Cloudflare KV for fast short‑code → URL lookups.             |
+| **Database**    | Neon Postgres + TimescaleDB hypertables for time‑series data. |
 
-<img src="./README.assets/doubly-architecture-full.png" style="zoom:20%;" />
+## 4. Request Flow (Simplified)
 
-### Upstash Redis VS Cloudflare KV
+<img src="./README.assets/doubly-architecture.png" style="zoom:20%;" alt="Simplified request flow" />
 
-Before doing any load testing, I wanted to check to see whether Upstash Redis or Cloudflare KV would be a better option for caching short links. As both services are offered globally, and can allow for a virtually unlimited number of reads/writes, my main focus was which service was faster. I did several quick tests from multiple regions and found that Upstash was consitently faster for cold-key lookups, but slower for warm-key lookups. This was true across all regions.
+1. **Incoming Request**
+   `GET https://doubly.dev/{shortCode}`
+2. **Producer Worker**
+   - Parse `shortCode`
+   - Check **local in‑memory cache**
+   - Fallback to **Cloudflare KV**
+   - Fallback to **Postgres** (not shown in diagram)
+3. **Enqueue Click Metadata**
+   - Collect device, geo, timestamp, referrer, etc.
+   - `enqueue()` to one of the **Queue Shards** (fire-and-forget)
+4. **Redirect**
+   - Return `301 Location: <original URL>`
 
-Cold reads, time in ms.
+## 5. Scaled Deployment & Sharding
 
+<img src="./README.assets/doubly-architecture-full.png" style="zoom:20%;" alt="Full architecture flow" />
+
+> We are not showing the *fallback to Postgres* path in the above diagram as this is uncommon.
+
+In production, Cloudflare automatically shards and scales each layer to meet traffic demands:
+
+- **Multi‑Region Producers**
+  Cloudflare routes users to the nearest Worker instance.
+- **Queue Shards**
+  Create N queues (≈ 500 RPS each). Hash on a unique request ID to distribute evenly.
+- **Consumer Pool**
+  Deploy a pool of Consumer Workers, each bound to one shard. Scale out Consumers based on queue depth.
+
+## 6. Caching Strategy
+
+1. **Local Cache** (per Worker instance)
+   - Sub-millisecond, ephemeral.
+2. **Cloudflare KV**
+   - Warm-key lookups: ~ 4 ms globally
+   - Cold-key lookups: < 200 ms
+   - Populates Local Cache
+3. **Postgres Fallback**
+   - Ultra‑rare; on miss, Producer populates KV.
+
+This three-tier cache minimizes latency and avoids unnecessary DB hits.
+
+## 7. Queue Sharding & Batching
+
+- **Why Queues?**
+  Batching writes to TimescaleDB hypertables boosts write throughput, reduces per-event overhead, and prevents sudden traffic spikes.
+- **Shard Strategy**
+  - Cloudflare Queues have per-queue limits.
+  - We spin up N identical queues and hash events by request ID.
+- **Consumer Behavior**
+  - Trigger on **either** “100 events enqueued” **or** “5 s elapsed.”
+  - Dequeue up to 100 events, validate, batch‑insert into Postgres.
+
+## 8. Retry Mechanisms
+
+To guarantee high reliability, both KV reads and queue enqueues employ retries with exponential backoff:
+
+```ts
+async function withRetry<T>(action: () => Promise<T>, retries = 3): Promise<T> {
+  for (let i = 1; i <= retries; i++) {
+    try {
+      return await action();
+    } catch (err) {
+      if (i === retries) throw err;
+      const backoffMs = 50 * 2 ** (i - 1);
+      await new Promise((r) => setTimeout(r, backoffMs));
+    }
+  }
+}
 ```
-{"redisLatency":63,"kvLatency":174}
-{"redisLatency":81,"kvLatency":178}
+
+- Producer wraps `kv.get()` and `queue.enqueue()` calls with `withRetry()`.
+- Consumer wraps batch-DB writes similarly to avoid partial failures.
+
+## 9. Data Storage & TimescaleDB
+
+- **Neon Postgres**: Serverless, autoscaling Postgres.
+- **TimescaleDB Hypertables**:
+  - Partition `click_events` by time (daily chunks).
+  - Extremely fast writes when batched.
+  - Support trillions of rows without manual sharding.
+- **Schema Highlights**:
+
+```sql
+CREATE TABLE click_events (
+  id         SERIAL        NOT NULL,
+  created_at TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  short_code TEXT          NOT NULL,
+  url        TEXT          NOT NULL,
+  country    VARCHAR(63),
+  city       VARCHAR(63),
+  browser    VARCHAR(63),
+  os         VARCHAR(63),
+  ...
+  PRIMARY KEY (id, created_at)
+);
+
+SELECT create_hypertable(
+  'click_events',
+  'created_at',
+  chunk_time_interval => INTERVAL '1 day',
+  if_not_exists       => TRUE,
+  migrate_data        => TRUE
+);
 ```
 
-Warm reads, time in ms.
+For full migration files, see the [migrations folder](https://github.com/mhwice/doubly/tree/main/migrations).
 
-```
-{"redisLatency":61,"kvLatency":4}
-{"redisLatency":54,"kvLatency":5}
-{"redisLatency":33,"kvLatency":3}
-{"redisLatency":57,"kvLatency":4}
-```
+## 10. Upstash Redis vs. Cloudflare KV
 
-Seeing as though a link redirect service is likely to be handling a lot of traffic, it seems that KV is the better option.
+Before settling on KV, we compared both services across multiple regions:
+
+| Read Type | Redis (ms) | KV (ms)   |
+| --------- | ---------- | --------- |
+| **Cold**  | 63 – 81    | 174 – 178 |
+| **Warm**  | 33 – 61    | 3 – 5     |
+
+- **Redis** wins cold reads; **KV** wins warm reads by a large margin.
+- Since most traffic hits hot keys, **Cloudflare KV** is the optimal choice.
